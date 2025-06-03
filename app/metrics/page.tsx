@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Loader, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader, ChevronDown, ChevronRight, Filter, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface ConversationData {
@@ -25,6 +25,9 @@ export default function MetricsPage() {
   const [metrics, setMetrics] = useState<SessionMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [agents, setAgents] = useState<string[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>('all');
+  const [showAgentDropdown, setShowAgentDropdown] = useState(false);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -33,6 +36,9 @@ export default function MetricsPage() {
         const data = await response.json();
         if (data.success) {
           setMetrics(data.data);
+          // Extract unique agents
+          const uniqueAgents = Array.from(new Set(data.data.map((item: SessionMetrics) => item.agent))) as string[];
+          setAgents(uniqueAgents);
         }
       } catch (error) {
         console.error('Error fetching metrics:', error);
@@ -64,11 +70,66 @@ export default function MetricsPage() {
     });
   };
 
+  // Filter metrics based on selected agent
+  const filteredMetrics = metrics.filter(metric => 
+    selectedAgent === 'all' || metric.agent === selectedAgent
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white shadow-md rounded-lg p-6 dark:bg-gray-900">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Session Metrics</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Session Metrics</h1>
+            
+            {/* Agent Filter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowAgentDropdown(!showAgentDropdown)}
+                className="flex items-center space-x-2 px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-100"
+              >
+                <Filter size={16} />
+                <span>
+                  {selectedAgent === 'all' ? `All Agents (${agents.length})` : selectedAgent}
+                </span>
+                {showAgentDropdown ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              
+              {showAgentDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedAgent('all');
+                        setShowAgentDropdown(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 ${
+                        selectedAgent === 'all' ? 'bg-blue-100 font-medium dark:bg-blue-900' : ''
+                      }`}
+                    >
+                      All Agents
+                    </button>
+                    
+                    {agents.map((agent) => (
+                      <button
+                        key={agent}
+                        onClick={() => {
+                          setSelectedAgent(agent);
+                          setShowAgentDropdown(false);
+                        }}
+                        className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 ${
+                          selectedAgent === agent ? 'bg-blue-100 font-medium dark:bg-blue-900' : ''
+                        }`}
+                      >
+                        {agent}
+                        {selectedAgent === agent && <span className="ml-2 text-xs text-blue-600 dark:text-blue-300">(Selected)</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
@@ -87,11 +148,11 @@ export default function MetricsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Start Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">End Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coming Soon 1</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coming Soon 2</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Coming Soon 2</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {metrics.map((metric) => (
+                  {filteredMetrics.map((metric) => (
                     <>
                       <tr 
                         key={metric.session_id} 
