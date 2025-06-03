@@ -279,72 +279,74 @@ export default function ConversationsPage() {
   const agentCount = agents.length;
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-100 py-4 px-2 sm:py-8 sm:px-6 lg:px-8 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow-md rounded-lg p-6 dark:bg-gray-900">
+        <div className="bg-white shadow-md rounded-lg p-3 sm:p-6 dark:bg-gray-900">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Tracking user Conversation</h1>
-            <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Tracking user Conversation</h1>
+            <div className="flex flex-wrap gap-2 sm:gap-4">
               <button
                 onClick={downloadCSV}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center space-x-2"
+                className="flex-1 sm:flex-none bg-green-500 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-green-600 flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-base"
               >
-                <Download size={20} />
-                <span>Download CSV</span>
+                <Download size={14} className="sm:w-5 sm:h-5 w-4 h-4" />
+                <span>CSV</span>
               </button>
               <button
                 onClick={downloadJSON}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center space-x-2"
+                className="flex-1 sm:flex-none bg-blue-500 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-blue-600 flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-base"
               >
-                <Download size={20} />
-                <span>Download JSON</span>
+                <Download size={14} className="sm:w-5 sm:h-5 w-4 h-4" />
+                <span>JSON</span>
               </button>
               <Link
                 href="/metrics"
-                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 flex items-center space-x-2"
+                className="flex-1 sm:flex-none bg-purple-500 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-purple-600 flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-base"
               >
-                <Hash size={20} />
+                <Hash size={14} className="sm:w-5 sm:h-5 w-4 h-4" />
                 <span>Metrics</span>
               </Link>
             </div>
           </div>
 
           {/* Search and Sort Controls */}
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-            <div className="relative w-full sm:w-96">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <div className="mb-6 flex flex-col gap-4">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap gap-2">
               {/* Agent Filter Dropdown */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <button
                   onClick={() => setShowAgentDropdown(!showAgentDropdown)}
-                  className="flex items-center space-x-2 px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-100"
+                  className="w-full sm:w-auto flex items-center justify-between space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-100 text-sm"
                 >
-                  <Filter size={16} />
-                  <span>
-                    {selectedAgent === 'all' ? `Agents (${agentCount})` : selectedAgent}
-                  </span>
-                  {showAgentDropdown ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  <div className="flex items-center space-x-2">
+                    <Filter size={14} className="sm:w-4 sm:h-4 w-3 h-3" />
+                    <span className="truncate">
+                      {selectedAgent === 'all' ? `Agents (${agentCount})` : selectedAgent}
+                    </span>
+                  </div>
+                  {showAgentDropdown ? <ChevronUp size={14} className="sm:w-4 sm:h-4 w-3 h-3" /> : <ChevronDown size={14} className="sm:w-4 sm:h-4 w-3 h-3" />}
                 </button>
                 
                 {showAgentDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-full sm:w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200 dark:bg-gray-900 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
                     <div className="py-1">
                       <button
                         onClick={() => {
                           setSelectedAgent('all');
                           setShowAgentDropdown(false);
                         }}
-                        className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 ${
+                        className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 text-sm ${
                           selectedAgent === 'all' ? 'bg-blue-100 font-medium dark:bg-blue-900' : ''
                         }`}
                       >
@@ -358,11 +360,11 @@ export default function ConversationsPage() {
                             setSelectedAgent(agent);
                             setShowAgentDropdown(false);
                           }}
-                          className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 ${
+                          className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-100 text-sm ${
                             selectedAgent === agent ? 'bg-blue-100 font-medium dark:bg-blue-900' : ''
                           }`}
                         >
-                          {agent}
+                          <span className="truncate block">{agent}</span>
                           {selectedAgent === agent && <span className="ml-2 text-xs text-blue-600 dark:text-blue-300">(Selected)</span>}
                         </button>
                       ))}
@@ -374,30 +376,30 @@ export default function ConversationsPage() {
               {/* Sort controls */}
               <button
                 onClick={() => toggleSort('timestamp')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded ${
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded text-sm ${
                   sortBy === 'timestamp' 
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-white' 
                     : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
                 }`}
               >
-                <Clock size={16} />
+                <Clock size={14} className="sm:w-4 sm:h-4 w-3 h-3" />
                 <span>Time</span>
                 {sortBy === 'timestamp' && (
-                  sortOrder === 'ASC' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                  sortOrder === 'ASC' ? <ChevronUp size={14} className="sm:w-4 sm:h-4 w-3 h-3" /> : <ChevronDown size={14} className="sm:w-4 sm:h-4 w-3 h-3" />
                 )}
               </button>
               <button
                 onClick={() => toggleSort('id')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded ${
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded text-sm ${
                   sortBy === 'id' 
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-white' 
                     : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
                 }`}
               >
-                <Hash size={16} />
+                <Hash size={14} className="sm:w-4 sm:h-4 w-3 h-3" />
                 <span>Sequence</span>
                 {sortBy === 'id' && (
-                  sortOrder === 'ASC' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                  sortOrder === 'ASC' ? <ChevronUp size={14} className="sm:w-4 sm:h-4 w-3 h-3" /> : <ChevronDown size={14} className="sm:w-4 sm:h-4 w-3 h-3" />
                 )}
               </button>
             </div>
@@ -413,41 +415,41 @@ export default function ConversationsPage() {
               {filteredConversations.map((conversation) => (
                 <div
                   key={conversation.session_id}
-                  className={`border border-gray-200 rounded-lg p-4 transition-all duration-200 dark:border-gray-700 ${
+                  className={`border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-200 dark:border-gray-700 ${
                     expandedSessions.has(conversation.session_id) 
                       ? 'ring-2 ring-blue-500 shadow-lg dark:ring-blue-400 dark:bg-gray-800' 
                       : 'hover:border-gray-300 dark:hover:border-gray-500'
                   }`}
                 >
                   <div 
-                    className="flex justify-between items-center"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0"
                   >
                     <div 
-                      className="flex items-center space-x-3 flex-1 cursor-pointer"
+                      className="flex items-start sm:items-center space-x-3 flex-1 cursor-pointer"
                       onClick={() => toggleSession(conversation.session_id)}
                     >
                       <ChevronRight 
-                        className={`transform transition-transform duration-200 ${
+                        className={`transform transition-transform duration-200 mt-1 sm:mt-0 ${
                           expandedSessions.has(conversation.session_id) 
                             ? 'rotate-90 text-blue-500' 
                             : 'text-gray-400'
                         }`}
-                        size={20}
+                        size={16}
                       />
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 flex items-center dark:text-gray-100">
+                        <h3 className="text-base sm:text-lg font-medium text-gray-900 flex flex-wrap items-center gap-2 dark:text-gray-100">
                           {formatSessionName(conversation.timestamp)}
-                          <span className={`ml-3 px-2 py-1 text-xs rounded ${getAgentBadgeColor(conversation.agent)}`}>
+                          <span className={`px-2 py-1 text-xs rounded ${getAgentBadgeColor(conversation.agent)}`}>
                             {conversation.agent}
                           </span>
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-300">
                           Session ID: {conversation.session_id.slice(0, 8)}...
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 ml-7 sm:ml-0">
+                      <span className="text-xs sm:text-sm text-gray-500">
                         {conversation.conversation_data.length} messages
                       </span>
                       <button
@@ -458,7 +460,7 @@ export default function ConversationsPage() {
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                         title="Open in popup"
                       >
-                        <Maximize2 size={18} className="text-gray-500 hover:text-blue-500" />
+                        <Maximize2 size={16} className="text-gray-500 hover:text-blue-500" />
                       </button>
                     </div>
                   </div>
@@ -469,11 +471,11 @@ export default function ConversationsPage() {
                         <div key={index}>
                           <div className="border-l-4 border-blue-500 pl-4 dark:bg-gray-900">
                             <div className="mb-2">
-                              <p className="font-bold text-gray-900 dark:text-gray-100 mb-1">User question:</p>
-                              <p className="text-gray-700 dark:text-gray-300">{message.question}</p>
+                              <p className="font-bold text-gray-900 dark:text-gray-100 mb-1 text-sm sm:text-base">User question:</p>
+                              <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">{message.question}</p>
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900 dark:text-gray-100 mb-1">Generated response:</p>
+                              <p className="font-bold text-gray-900 dark:text-gray-100 mb-1 text-sm sm:text-base">Generated response:</p>
                               <article className="prose prose-sm max-w-none dark:prose-invert">
                                 <ReactMarkdown>{message.response}</ReactMarkdown>
                               </article>
@@ -498,10 +500,7 @@ export default function ConversationsPage() {
 
       {/* Popup Modal */}
       {popoutSession && (
-        <SessionModal 
-          conversation={popoutSession} 
-          onClose={() => setPopoutSession(null)} 
-        />
+        <SessionModal conversation={popoutSession} onClose={() => setPopoutSession(null)} />
       )}
     </div>
   );
