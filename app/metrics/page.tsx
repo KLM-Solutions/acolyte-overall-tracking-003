@@ -16,12 +16,12 @@ interface SessionMetrics {
   conversation_count: number;
   start_time: string;
   end_time: string;
-  coming_soon_1: string;
-  coming_soon_2: string;
+  try_count: string;
+  score_summary: string;
   conversation_data: ConversationData[];
 }
 
-type SortField = 'date' | 'agent' | 'conversation_count' | 'start_time' | 'end_time' | 'duration';
+type SortField = 'session_id' | 'date' | 'agent' | 'conversation_count' | 'start_time' | 'end_time' | 'duration';
 type SortOrder = 'asc' | 'desc';
 
 // Color palette for agents
@@ -77,6 +77,7 @@ const getAgentColor = (agent: string) => {
 export default function MetricsPage() {
   const [metrics, setMetrics] = useState<SessionMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingLLM, setIsProcessingLLM] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [agents, setAgents] = useState<string[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
@@ -84,20 +85,84 @@ export default function MetricsPage() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
+  const processConversationWithLLM = async (conversationData: ConversationData[]) => {
+    try {
+      const prompt = `For this conversation, help me deduce the following metrics or data.
+1. Extract how many number of tries the user had to reach a perfect response or their own satisfactory response or till end of conversation.
+2. Extract the scores the user scored in each try. For reference, the scores are on a 8 point or 16 point scale. Ensure to not process the actual prompt explaining the scoring rubric. For reference, the data to look for will be like "Total Score:" If Total Score is not available, return null.
+Provide the output as:
+Total number of tries:
+Scores for each try: try #, score
+
+Conversation data:
+${JSON.stringify(conversationData, null, 2)}`;
+
+      const response = await fetch('/api/llm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get LLM response');
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error('Error processing conversation with LLM:', error);
+      return 'Error processing conversation';
+    }
+  };
+
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
         const response = await fetch('/api/metrics');
         const data = await response.json();
         if (data.success) {
-          setMetrics(data.data);
-          const uniqueAgents = Array.from(new Set(data.data.map((item: SessionMetrics) => item.agent))) as string[];
+          // Sort by date
+          const sortedData = data.data.sort((a: SessionMetrics, b: SessionMetrics) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+
+          // Get top 10 for LLM processing
+          const top10Data = sortedData.slice(0, 10);
+
+          // Process top 10 conversations with LLM
+          setIsProcessingLLM(true);
+          const processedTop10 = await Promise.all(
+            top10Data.map(async (metric: SessionMetrics) => {
+              const llmResponse = await processConversationWithLLM(metric.conversation_data);
+              return {
+                ...metric,
+                try_count: llmResponse,
+                score_summary: llmResponse,
+              };
+            })
+          );
+
+          // Add remaining rows with "Not processed" for LLM columns
+          const remainingRows = sortedData.slice(10).map((metric: SessionMetrics) => ({
+            ...metric,
+            try_count: "Not processed",
+            score_summary: "Not processed",
+          }));
+
+          // Combine processed and unprocessed rows
+          const allProcessedData = [...processedTop10, ...remainingRows];
+
+          setMetrics(allProcessedData);
+          const uniqueAgents = Array.from(new Set(allProcessedData.map((item: SessionMetrics) => item.agent))) as string[];
           setAgents(uniqueAgents);
         }
       } catch (error) {
         console.error('Error fetching metrics:', error);
       } finally {
         setIsLoading(false);
+        setIsProcessingLLM(false);
       }
     };
 
@@ -199,8 +264,8 @@ export default function MetricsPage() {
       'Start Time',
       'End Time',
       'Duration',
-      'Coming Soon 1',
-      'Coming Soon 2'
+      'Try Count',
+      'Score Summary'
     ];
 
     const csvData = filteredMetrics.map(metric => [
@@ -211,8 +276,8 @@ export default function MetricsPage() {
       metric.start_time,
       metric.end_time,
       calculateDuration(metric.start_time, metric.end_time),
-      metric.coming_soon_1,
-      metric.coming_soon_2
+      metric.try_count,
+      metric.score_summary
     ]);
 
     const csvContent = [
@@ -239,8 +304,8 @@ export default function MetricsPage() {
       start_time: metric.start_time,
       end_time: metric.end_time,
       duration: calculateDuration(metric.start_time, metric.end_time),
-      coming_soon_1: metric.coming_soon_1,
-      coming_soon_2: metric.coming_soon_2
+      try_count: metric.try_count,
+      score_summary: metric.score_summary
     }));
 
     const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
@@ -342,9 +407,12 @@ export default function MetricsPage() {
             </div>
           </div>
           
-          {isLoading ? (
+          {isLoading || isProcessingLLM ? (
             <div className="flex justify-center items-center h-64">
               <Loader className="w-8 h-8 animate-spin text-blue-500" />
+              {isProcessingLLM && (
+                <span className="ml-2 text-gray-600 dark:text-gray-300">Processing conversations with LLM...</span>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -352,6 +420,9 @@ export default function MetricsPage() {
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="w-10 px-6 py-3"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('session_id')}>
+                      Session ID {sortField === 'session_id' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
                       Date {sortField === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
@@ -359,7 +430,7 @@ export default function MetricsPage() {
                       Agent {sortField === 'agent' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('conversation_count')}>
-                      Conversations {sortField === 'conversation_count' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      Thread Count {sortField === 'conversation_count' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('start_time')}>
                       Start Time {sortField === 'start_time' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -370,8 +441,8 @@ export default function MetricsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('duration')}>
                       Duration {sortField === 'duration' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coming Soon 1</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coming Soon 2</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Try Count</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Score Summary</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
@@ -389,6 +460,7 @@ export default function MetricsPage() {
                             <ChevronRight className="w-5 h-5 text-gray-500" />
                           )}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.session_id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.date}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAgentColor(metric.agent).bg} ${getAgentColor(metric.agent).text}`}>
@@ -401,8 +473,8 @@ export default function MetricsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {calculateDuration(metric.start_time, metric.end_time)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.coming_soon_1}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.coming_soon_2}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.try_count}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{metric.score_summary}</td>
                       </tr>
                       {expandedRows.has(metric.session_id) && (
                         <tr>
