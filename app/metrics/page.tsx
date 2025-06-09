@@ -219,10 +219,8 @@ ${JSON.stringify(conversationData, null, 2)}`;
     
     const diffMs = end.getTime() - start.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const remainingMins = diffMins % 60;
     
-    return `${diffHours}h ${remainingMins}m`;
+    return `${diffMins} minutes`;
   };
 
   const handleSort = (field: SortField) => {
