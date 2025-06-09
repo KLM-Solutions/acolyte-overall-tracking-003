@@ -151,13 +151,10 @@ ${JSON.stringify(conversationData, null, 2)}`;
             return new Date(b.date).getTime() - new Date(a.date).getTime();
           });
 
-          // Get top 10 for LLM processing
-          const top10Data = sortedData.slice(0, 10);
-
-          // Process top 10 conversations with LLM
+          // Process all conversations with LLM
           setIsProcessingLLM(true);
-          const processedTop10 = await Promise.all(
-            top10Data.map(async (metric: SessionMetrics) => {
+          const processedData = await Promise.all(
+            sortedData.map(async (metric: SessionMetrics) => {
               const llmResponse = await processConversationWithLLM(metric.conversation_data);
               return {
                 ...metric,
@@ -167,18 +164,8 @@ ${JSON.stringify(conversationData, null, 2)}`;
             })
           );
 
-          // Add remaining rows with "Not processed" for LLM columns
-          const remainingRows = sortedData.slice(10).map((metric: SessionMetrics) => ({
-            ...metric,
-            try_count: "Not processed",
-            score_summary: "Not processed",
-          }));
-
-          // Combine processed and unprocessed rows
-          const allProcessedData = [...processedTop10, ...remainingRows];
-
-          setMetrics(allProcessedData);
-          const uniqueAgents = Array.from(new Set(allProcessedData.map((item: SessionMetrics) => item.agent))) as string[];
+          setMetrics(processedData);
+          const uniqueAgents = Array.from(new Set(processedData.map((item: SessionMetrics) => item.agent))) as string[];
           setAgents(uniqueAgents);
         }
       } catch (error) {
